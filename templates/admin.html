@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - EventHub{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-12">
+    <div class="mb-12 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div>
+            <div class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black uppercase tracking-widest mb-3">Organizer Control Center</div>
+            <h2 class="text-4xl font-extrabold text-gray-900 tracking-tight">Admin Dashboard</h2>
+            <p class="mt-2 text-gray-500 font-medium">Manage users, registrations and attendance.</p>
+        </div>
+        <a href="{{ url_for('scan') }}" class="inline-flex items-center justify-center px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all">📸 Open Attendance Scanner</a>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><p class="text-xs font-bold text-gray-400 uppercase">Users</p><p class="text-3xl font-black text-indigo-600 mt-1">{{ users|length }}</p></div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><p class="text-xs font-bold text-gray-400 uppercase">Events</p><p class="text-3xl font-black text-purple-600 mt-1">{{ events|length }}</p></div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><p class="text-xs font-bold text-gray-400 uppercase">Registered</p><p class="text-3xl font-black text-yellow-600 mt-1">{{ total_confirmed }}</p></div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100"><p class="text-xs font-bold text-gray-400 uppercase">Attended</p><p class="text-3xl font-black text-green-600 mt-1">{{ total_attended }}</p></div>
+    </div>
+
+    <div class="space-y-12">
+        <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+            <div class="px-8 py-6 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-gray-900">User Management</h3>
+                <span class="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-black rounded-full uppercase">Database: users</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead><tr class="bg-gray-50/50">
+                        <th class="px-8 py-4 text-xs font-bold text-gray-400 uppercase">ID</th>
+                        <th class="px-8 py-4 text-xs font-bold text-gray-400 uppercase">Name</th>
+                        <th class="px-8 py-4 text-xs font-bold text-gray-400 uppercase">Email</th>
+                        <th class="px-8 py-4 text-xs font-bold text-gray-400 uppercase">Role</th>
+                        <th class="px-8 py-4 text-xs font-bold text-gray-400 uppercase">Joined On</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-gray-100">
+                    {% for user in users %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-8 py-5 text-sm font-bold text-gray-400">#{{ user.id }}</td>
+                        <td class="px-8 py-5 text-sm font-extrabold text-gray-900">{{ user.name }}</td>
+                        <td class="px-8 py-5 text-sm text-gray-600">{{ user.email }}</td>
+                        <td class="px-8 py-5"><span class="px-3 py-1 rounded-full text-xs font-black {{ 'bg-indigo-100 text-indigo-700' if user.is_admin else 'bg-gray-100 text-gray-600' }}">{{ 'ADMIN' if user.is_admin else 'USER' }}</span></td>
+                        <td class="px-8 py-5 text-sm text-gray-500">{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+            <div class="px-8 py-6 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-gray-900">Registration & Attendance</h3>
+                <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-black rounded-full uppercase">Database: registrations</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead><tr class="bg-gray-50/50">
+                        <th class="px-8 py-4 text-xs font-bold text-gray-400 uppercase">Participant</th>
+                        <th class="px-8 py-4 text-xs font-bold text-gray-400 uppercase">Event</th>
+                        <th class="px-8 py-4 text-xs font-bold text-gray-400 uppercase">Contact</th>
+                        <th class="px-8 py-4 text-xs font-bold text-gray-400 uppercase">QR</th>
+                        <th class="px-8 py-4 text-xs font-bold text-gray-400 uppercase">Status</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-gray-100">
+                    {% for reg in registrations %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-8 py-5"><p class="text-sm font-extrabold text-gray-900">{{ reg.name }}</p><p class="text-xs text-gray-400">{{ reg.email }}</p></td>
+                        <td class="px-8 py-5"><p class="text-sm font-bold text-indigo-600">{{ reg.event.name }}</p><p class="text-xs text-gray-400">{{ reg.event.date.strftime('%B %d') }}</p></td>
+                        <td class="px-8 py-5 text-sm text-gray-600">{{ reg.phone }}</td>
+                        <td class="px-8 py-5">
+                            {% if reg.qr_code_path %}
+                            <a href="{{ url_for('static', filename=reg.qr_code_path.replace('static/', '')) }}" target="_blank" class="text-xs font-semibold bg-gray-100 px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">View QR</a>
+                            {% else %}<span class="text-xs text-gray-400">Not generated</span>{% endif %}
+                        </td>
+                        <td class="px-8 py-5"><span class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest {{ 'bg-green-100 text-green-700' if reg.status == 'attended' else 'bg-yellow-100 text-yellow-700' }}">{{ reg.status }}</span></td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

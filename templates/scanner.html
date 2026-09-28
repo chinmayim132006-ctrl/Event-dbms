@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Scan QR - EventHub{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-12">
+    <div class="bg-white p-8 rounded-3xl shadow-xl text-center">
+        <div class="inline-flex items-center px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black uppercase tracking-widest mb-4">
+            Organizer Mode
+        </div>
+        <h2 class="text-3xl font-extrabold text-gray-900 mb-2">Attendance Scanner</h2>
+        <p class="text-gray-500 mb-8">Scan a registered participant's EventHub QR pass at the venue.</p>
+
+        <div id="reader" class="overflow-hidden rounded-2xl border-4 border-dashed border-gray-200 bg-gray-50 mb-8"></div>
+
+        <div id="result-container" class="hidden p-6 rounded-2xl mb-8 transition-all duration-300">
+            <p id="result-message" class="font-bold text-lg"></p>
+            <p id="result-event" class="text-sm mt-2"></p>
+            <button onclick="resetScanner()" class="mt-4 px-6 py-2 bg-gray-900 text-white rounded-full text-sm font-bold">Scan Next</button>
+        </div>
+
+        <div class="text-left bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+            <h4 class="text-indigo-900 font-bold mb-2">Secure attendance</h4>
+            <ul class="text-sm text-indigo-700 space-y-2 list-disc list-inside">
+                <li>Only an organizer account can access this scanner.</li>
+                <li>Each registration has a unique QR token.</li>
+                <li>The server verifies the QR against the registration database.</li>
+                <li>A registration can be marked attended only once.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+    const resultContainer = document.getElementById('result-container');
+    const resultMessage = document.getElementById('result-message');
+    const resultEvent = document.getElementById('result-event');
+    const readerDiv = document.getElementById('reader');
+    let html5QrcodeScanner;
+
+    function showResult(type, message, eventName = '') {
+        resultContainer.classList.remove('hidden');
+        resultContainer.className = 'p-6 rounded-2xl mb-8 transition-all duration-300 ' +
+            (type === 'success'
+                ? 'bg-green-50 text-green-700 border border-green-200'
+                : 'bg-red-50 text-red-700 border border-red-200');
+        resultMessage.innerText = (type === 'success' ? '🎉 ' : '❌ ') + message;
+        resultEvent.innerText = eventName ? 'Event: ' + eventName : '';
+    }
+
+    function onScanSuccess(decodedText) {
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().catch(() => {});
+        }
+        readerDiv.classList.add('hidden');
+        resultContainer.classList.remove('hidden');
+        resultContainer.className = 'p-6 rounded-2xl mb-8 bg-blue-50 text-blue-700 border border-blue-200';
+        resultMessage.innerText = 'Verifying QR Code...';
+        resultEvent.innerText = '';
+
+        fetch('/api/scan-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ decodedText: decodedText })
+        })
+        .then(async response => {
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Verification failed.');
+            return data;
+        })
+        .then(data => showResult('success', data.message, data.event))
+        .catch(err => showResult('error', err.message));
+    }
+
+    function onScanFailure() {
+        // Scanner continuously retries while looking for a QR code.
+    }
+
+    function startScanner() {
+        readerDiv.classList.remove('hidden');
+        resultContainer.classList.add('hidden');
+        html5QrcodeScanner = new Html5QrcodeScanner('reader', { fps: 15, qrbox: 250 }, false);
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    }
+
+    function resetScanner() {
+        startScanner();
+    }
+
+    startScanner();
+</script>
+{% endblock %}

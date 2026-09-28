@@ -1,0 +1,25 @@
+EVENTHUB UPDATED VERSION
+
+WHAT WAS CHANGED
+- Admin-only Admin Dashboard and QR scanner.
+- Secure random QR registration tokens; user/event IDs are no longer placed in the QR text.
+- Backend verifies every QR token against the registration database.
+- The same registration cannot be marked attended twice.
+- Existing registrations receive secure QR tokens and regenerated QR images on first run.
+- User passwords are no longer displayed in the admin dashboard.
+- New passwords are stored as hashes. Existing demo plaintext passwords are upgraded to hashes after a successful login.
+- Added admin/QR columns and indexes through a safe SQLite migration.
+
+RUN
+1. Open this folder in VS Code.
+2. Activate/create a Python virtual environment.
+3. Run: pip install -r requirements.txt
+4. Check .env. ADMIN_EMAIL is currently set to the existing demo account xyz@gmail.com. Change it to the email you want to be the organizer/admin.
+5. Run: python app.py
+6. The first run updates the existing database.db and regenerates QR codes.
+7. Log in using the configured ADMIN_EMAIL account to see Admin and Attendance Scanner.
+
+IMPORTANT
+- Keep database.db. Do not run seed.py unless you intentionally want to replace the event data.
+- The app uses SQLite (database.db), not MySQL.
+- The old attendance table is not used; attendance is safely represented by registrations.status, which keeps the project simpler for DBMS viva.
